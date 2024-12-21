@@ -35,6 +35,11 @@ jobs:
         pip install pytest
         pytest --disable-warnings  # Show warnings but do not treat them as errors
 
+    - name: Set up Docker Compose
+      uses: docker/setup-compose@v2
+      with:
+        version: '1.29.2'  # Specify the desired Docker Compose version
+
     - name: Build Docker Images
       run: |
         docker-compose -f docker/docker-compose.yml build
