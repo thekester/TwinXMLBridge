@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Now points to Ubuntu 24.04
+    runs-on: ubuntu-24.04  # https://github.blog/changelog/2024-05-14-github-hosted-runners-public-beta-of-ubuntu-24-04-is-now-available/
 
     steps:
     - name: Checkout Code
