@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="TaskCreate">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="TaskID" type="xs:string"/>
+                <xs:element name="Description" type="xs:string"/>
+                <xs:element name="Priority" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="TaskResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="TaskID" type="xs:string"/>
+                <xs:element name="Status" type="xs:string"/>
+                <xs:element name="Message" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server
+    image: twinxml_bridge_server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../schemas:/app/schemas
+      - ../templates:/app/templates
+
+  client:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    image: twinxml_bridge_client
+    depends_on:
+      - server
+    volumes:
+      - ../schemas:/app/schemas
+      - ../templates:/app/templates
