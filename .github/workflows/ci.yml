@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.9, 3.10, 3.11, 3.12]  # Updated to include Python 3.12
+        python-version: ['3.9', '3.10', '3.11', '3.12']  # Updated to include Python 3.12
       fail-fast: false  # Continue running all jobs even if one fails
 
     steps:
