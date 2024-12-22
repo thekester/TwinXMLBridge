@@ -9,65 +9,87 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04  # https://github.blog/changelog/2024-05-14-github-hosted-runners-public-beta-of-ubuntu-24-04-is-now-available/
+    runs-on: ubuntu-24.04  # Using Ubuntu 24.04 as per the latest runner
+
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11, 3.12]  # Updated to include Python 3.12
+      fail-fast: false  # Continue running all jobs even if one fails
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        flake8 . --exit-zero  # Continue even if there are linting issues
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run Tests
-      run: |
-        pip install pytest
-        pytest --disable-warnings  # Show warnings but do not treat them as errors
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 . --exit-zero  # Continue even if there are linting issues
 
-    - name: Install Docker Compose
-      run: |
-        sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
+      - name: Run Tests with Coverage
+        run: |
+          pip install pytest coverage
+          coverage run -m pytest
+          coverage report
+          coverage xml  # Generate coverage report in XML format
 
-    - name: Verify Docker Compose Installation
-      run: |
-        docker-compose --version
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-    - name: Build Docker Images
-      run: |
-        docker-compose -f docker/docker-compose.yml build
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Verify Docker Compose Installation
+        run: docker-compose --version
 
-    - name: Tag and Push Server Image
-      run: |
-        # Extract branch name and replace invalid characters for Docker tags
-        BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
-        # Tag the server image with the branch name
-        docker tag twinxml_bridge_server:latest ${{ secrets.DOCKER_USERNAME }}/twinxml_bridge_server:${BRANCH_NAME}
-        # Push the tagged server image to Docker Hub
-        docker push ${{ secrets.DOCKER_USERNAME }}/twinxml_bridge_server:${BRANCH_NAME}
+      - name: Build Docker Images
+        run: docker-compose -f docker/docker-compose.yml build
 
-    - name: Tag and Push Client Image
-      run: |
-        # Extract branch name and replace invalid characters for Docker tags
-        BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
-        # Tag the client image with the branch name
-        docker tag twinxml_bridge_client:latest ${{ secrets.DOCKER_USERNAME }}/twinxml_bridge_client:${BRANCH_NAME}
-        # Push the tagged client image to Docker Hub
-        docker push ${{ secrets.DOCKER_USERNAME }}/twinxml_bridge_client:${BRANCH_NAME}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Tag and Push Server Image
+        run: |
+          # Extract branch name and replace invalid characters for Docker tags
+          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
+          # Tag the server image with the branch name
+          docker tag twinxml_bridge_server:latest ${{ secrets.DOCKER_USERNAME }}/twinxml_bridge_server:${BRANCH_NAME}
+          # Push the tagged server image to Docker Hub
+          docker push ${{ secrets.DOCKER_USERNAME }}/twinxml_bridge_server:${BRANCH_NAME}
+
+      - name: Tag and Push Client Image
+        run: |
+          # Extract branch name and replace invalid characters for Docker tags
+          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
+          # Tag the client image with the branch name
+          docker tag twinxml_bridge_client:latest ${{ secrets.DOCKER_USERNAME }}/twinxml_bridge_client:${BRANCH_NAME}
+          # Push the tagged client image to Docker Hub
+          docker push ${{ secrets.DOCKER_USERNAME }}/twinxml_bridge_client:${BRANCH_NAME}
